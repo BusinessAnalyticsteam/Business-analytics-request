@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Analytics Request — Business Analytics, Starlink Qatar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;background:#F4F2F8;color:#1A1A2E;font-size:15px;min-height:100vh;padding-bottom:40px}
+
+/* ── Topbar ── */
+.topbar{background:#7B2D8B;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:relative}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-icon{width:34px;height:34px;background:rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.topbar-name{font-size:15px;font-weight:700;color:#fff}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-top:1px}
+.topbar-step{background:rgba(255,255,255,0.2);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap}
+
+/* ── Progress ── */
+.prog-bar{height:5px;background:#D8D4EC}
+.prog-fill{height:5px;background:#F7941D;transition:width 0.3s}
+
+/* ── Page ── */
+.page{max-width:680px;margin:0 auto;padding:20px 16px}
+
+/* ── Steps ── */
+.step{display:none}
+.step.active{display:block}
+
+/* ── Card ── */
+.card{background:#fff;border-radius:16px;border:1px solid #E2DFF0;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.card-head{background:#7B2D8B;padding:16px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;gap:12px}
+.card-num{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-head h2{font-size:17px;font-weight:700;color:#fff;margin-bottom:2px}
+.card-head p{font-size:12px;color:rgba(255,255,255,0.75)}
+.card-body{padding:20px}
+
+/* ── Fields ── */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.lbl{font-size:13px;font-weight:600;color:#1A1A2E;margin-bottom:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.req{font-size:10px;font-weight:700;color:#7B2D8B;background:#EEE8F5;padding:2px 7px;border-radius:4px}
+.opt{font-size:10px;font-weight:600;color:#888;background:#F4F4F4;padding:2px 7px;border-radius:4px}
+.hint{font-size:12px;color:#888;margin-bottom:6px;line-height:1.5}
+.eg{font-size:12px;color:#555;background:#F9F7FC;border-left:3px solid #7B2D8B;border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:8px;font-style:italic;line-height:1.5}
+.eg strong{font-style:normal;color:#7B2D8B;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+
+/* ── Inputs ── */
+input[type=text],input[type=email],input[type=date],select,textarea{
+  display:block;width:100%;padding:12px 14px;
+  border:1.5px solid #D8D4EC;border-radius:10px;
+  font-size:16px;font-family:inherit;color:#1A1A2E;
+  background:#fff;-webkit-appearance:none;appearance:none;
+  line-height:1.4;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#7B2D8B;box-shadow:0 0 0 3px rgba(123,45,139,0.08)}
+textarea{min-height:96px;resize:vertical}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  background-color:#fff;padding-right:40px;cursor:pointer;
+}
+input[readonly]{background:#F0EDF8;color:#555}
+select[multiple]{
+  padding:0;background-image:none;padding-right:14px;
+  border:1.5px solid #D8D4EC;border-radius:10px;
+  overflow:hidden;
+}
+select[multiple] option{
+  padding:12px 14px;font-size:15px;color:#1A1A2E;
+  border-bottom:1px solid #F0EDF8;cursor:pointer;
+}
+select[multiple] option:last-child{border-bottom:none}
+select[multiple] option:checked{
+  background:#EEE8F5;color:#7B2D8B;font-weight:600;
+}
+.auto-field{background:#F0EDF8;border:1.5px solid #D8D4EC;border-radius:10px;padding:12px 14px;font-size:15px;color:#555;display:flex;align-items:center;gap:8px}
+.auto-loading{color:#aaa;font-style:italic;font-size:14px}
+
+/* ── Two column on desktop ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){.two-col{grid-template-columns:1fr}}
+
+/* ── Output type rows ── */
+.out-list{display:flex;flex-direction:column;gap:8px}
+.out-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1.5px solid #D8D4EC;border-radius:10px;background:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.out-row input[type=checkbox]{width:22px;height:22px;accent-color:#7B2D8B;flex-shrink:0;cursor:pointer}
+.out-row span{font-size:15px;color:#1A1A2E}
+.out-row.on{background:#F7F3FC;border-color:#7B2D8B}
+.out-row.on span{color:#7B2D8B;font-weight:500}
+
+/* ── Gate questions ── */
+.gate{border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid}
+.gate-p{background:#F7F3FC;border-color:#C9A8E0}
+.gate-o{background:#FFF8F0;border-color:#F0C878}
+.gate-q{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.gate-p .gate-q{color:#5A1A6E}
+.gate-o .gate-q{color:#7A4500}
+.gate-warn{font-size:12px;color:#C0392B;margin-bottom:8px;font-weight:500}
+.gate textarea{min-height:84px}
+
+/* ── KPI rows ── */
+.kpi-row{border:1.5px solid #E2DFF0;border-radius:10px;padding:14px;margin-bottom:10px;background:#FAFAFA}
+.kpi-lbl{font-size:10px;font-weight:700;color:#7B2D8B;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.kpi-row input,.kpi-row select{margin-bottom:8px}
+.kpi-row select:last-child,.kpi-row input:last-child{margin-bottom:0}
+
+/* ── RAG ── */
+.rag-item{margin-bottom:12px}
+.rag-lbl{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.rag-g .rag-lbl{color:#1A7A46}
+.rag-a .rag-lbl{color:#8A5500}
+.rag-r .rag-lbl{color:#AA2222}
+.rag-item textarea{min-height:70px;font-size:15px}
+
+/* ── Errors ── */
+.err{font-size:12px;color:#C0392B;margin-top:5px;font-weight:500;display:none}
+
+/* ── Attachment ── */
+.attach-box{border:2px dashed #D8D4EC;border-radius:12px;padding:20px 16px;text-align:center;background:#FAFAFA;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.attach-box.has-file{border-color:#27AE60;background:#F0FAF4;border-style:solid}
+.attach-icon{font-size:28px;margin-bottom:8px}
+.attach-title{font-size:14px;font-weight:600;color:#1A1A2E;margin-bottom:4px}
+.attach-hint{font-size:12px;color:#888}
+.attach-name{font-size:13px;color:#27AE60;font-weight:600;margin-top:8px;display:none}
+.attach-box input[type=file]{margin-top:12px;font-size:14px;display:block;width:100%}
+
+/* ── Stakeholder ── */
+.sth-row{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-bottom:8px}
+@media(max-width:520px){.sth-row{grid-template-columns:1fr}}
+
+/* ── Navigation ── */
+.nav{padding:16px 20px;border-top:1px solid #F0EDF8;background:#FAFAFA;border-radius:0 0 16px 16px;display:flex;flex-direction:column;gap:10px}
+.nav-btn{
+  display:block;width:100%;padding:16px;
+  border-radius:10px;border:none;
+  font-size:16px;font-family:inherit;font-weight:700;
+  cursor:pointer;text-align:center;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;
+}
+.btn-next{background:#7B2D8B;color:#fff}
+.btn-next:active{background:#6a2478}
+.btn-back{background:#F4F2F8;color:#555;border:1.5px solid #D8D4EC}
+.btn-back:active{background:#E8E4F0}
+.btn-sub{background:#1A7A46;color:#fff;font-size:17px;padding:18px}
+.btn-sub:active{background:#155f38}
+.add-more{
+  display:block;width:100%;padding:12px;text-align:center;
+  font-size:13px;font-weight:600;color:#7B2D8B;
+  background:none;border:1.5px dashed #D8D4EC;border-radius:10px;
+  cursor:pointer;margin-top:8px;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+
+/* ── Review ── */
+.rev-section{margin-bottom:14px}
+.rev-title{font-size:11px;font-weight:700;color:#7B2D8B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #E2DFF0}
+.rev-row{margin-bottom:7px}
+.rev-lbl{font-size:11px;color:#888;margin-bottom:2px}
+.rev-val{font-size:13px;color:#1A1A2E;white-space:pre-wrap;line-height:1.5}
+
+/* ── Spinner ── */
+.spin-row{display:none;align-items:center;gap:10px;color:#555;font-size:14px;padding:12px 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:20px;height:20px;border:2.5px solid #ddd;border-top-color:#7B2D8B;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+
+/* ── Result ── */
+.result{border-radius:14px;padding:28px 20px;text-align:center}
+.result.ok{background:#EAF7EF;border:1.5px solid #A8DDB5}
+.result.fail{background:#FDF0F0;border:1.5px solid #F0B0B0}
+.result-icon{font-size:52px;margin-bottom:14px}
+.result-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.result.ok .result-title{color:#1A5C35}
+.result.fail .result-title{color:#8B1A1A}
+.result-body{font-size:14px;color:#555;line-height:1.7;margin-bottom:16px}
+.ticket{display:inline-block;background:#fff;border:1.5px solid #D0C8E0;border-radius:10px;padding:10px 20px;font-size:15px;font-weight:700;color:#7B2D8B;margin-bottom:12px}
+.jlink{color:#7B2D8B;font-size:14px;font-weight:600;text-decoration:none}
+.cors-box{background:#FFF8F0;border:1px solid #F0C878;border-radius:10px;padding:14px;margin-top:12px;font-size:13px;color:#7A4500;text-align:left;line-height:1.6}
+
+/* ── Desktop enhancements ── */
+@media(min-width:600px){
+  .page{padding:24px 20px}
+  .card-body{padding:24px}
+  .nav{flex-direction:row;justify-content:space-between;align-items:center}
+  .nav-btn{width:auto;min-width:160px;padding:14px 28px}
+  .btn-sub{width:auto;min-width:200px}
+  .btn-back-left{order:-1}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-icon">📊</div>
+    <div>
+      <div class="topbar-name">Business Analytics</div>
+      <div class="topbar-sub">Starlink Qatar · Starzen GCC</div>
+    </div>
+  </div>
+  <div class="topbar-step" id="step_lbl">Step 1 of 6</div>
+</div>
+<div class="prog-bar"><div class="prog-fill" id="prog" style="width:16.6%"></div></div>
+
+<div class="page">
+
+<!-- ── STEP 1 — Requester ── -->
+<div class="step active" id="s0">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">1</div>
+      <div><h2>Your details</h2><p>Tell us who you are and which team you represent.</p></div>
+    </div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="field">
+          <div class="lbl">Full name <span class="req">REQUIRED</span></div>
+          <div class="auto-field" id="disp_name">
+            <span>👤</span><span id="name_val" class="auto-loading">Loading...</span>
+          </div>
+          <input type="hidden" id="f_name">
+        </div>
+        <div class="field">
+          <div class="lbl">Email address <span class="req">REQUIRED</span></div>
+          <div class="auto-field" id="disp_email">
+            <span>✉️</span><span id="email_val" class="auto-loading">Loading...</span>
+          </div>
+          <input type="hidden" id="f_email">
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <div class="lbl">Business unit <span class="req">REQUIRED</span></div>
+          <select id="f_bu" onchange="loadDepts()">
+            <option value="">— Select Business Unit —</option>
+            <option value="Consumer Tech">Consumer Tech</option>
+            <option value="BPO">BPO</option>
+            <option value="ICT Distribution">ICT Distribution</option>
+            <option value="Support">Support</option>
+          </select>
+          <div class="err" id="e_bu">Please select your business unit.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Request priority <span class="opt">OPTIONAL</span></div>
+          <select id="f_priority">
+            <option value="">— Select Priority —</option>
+            <option value="Critical">Critical — Imminent business decision</option>
+            <option value="High">High — Strategic impact this quarter</option>
+            <option value="Medium">Medium — Operational, not time-critical</option>
+            <option value="Low">Low — Desirable but not urgent</option>
+          </select>
+          <div class="err" id="e_priority">Please select a priority.</div>
+        </div>
+      </div>
+      <div class="field" id="dept_wrap" style="display:none">
+        <div class="lbl">Department <span class="opt">OPTIONAL</span></div>
+        <div class="hint">Hold Ctrl / Cmd to select multiple, or tap each one on mobile.</div>
+        <select id="f_dept" multiple style="height:auto;min-height:48px;padding:4px 0;background-image:none;padding-right:14px">
+        </select>
+        <div class="hint" style="margin-top:4px;font-style:italic">Selected departments will appear highlighted.</div>
+      </div>
+      <div class="field">
+        <div class="lbl">Required by date <span class="opt">OPTIONAL</span></div>
+        <div class="hint">Your preferred date. Analytics team confirms feasibility at triage.</div>
+        <input type="date" id="f_date">
+      </div>
+    </div>
+    <div class="nav">
+      <div></div>
+      <button class="nav-btn btn-next" id="btn0">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 2 — Business context ── -->
+<div class="step" id="s1">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">2</div>
+      <div><h2>Business context</h2><p>Describe the current situation and the gaps this initiative addresses.</p></div>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <div class="lbl">Initiative title <span class="req">REQUIRED</span></div>
+        <div class="hint">A concise title for this analytics request.</div>
+        <input type="text" id="f_title" placeholder="e.g. Executive Churn Dashboard — Consumer Tech Leadership">
+        <div class="err" id="e_title">An initiative title is required.</div>
+      </div>
+      <div class="field">
+        <div class="lbl">Business context <span class="opt">OPTIONAL</span></div>
+        <div class="hint">2–3 sentences. Avoid solution language — describe the current state.</div>
+        <div class="eg">
+          <strong>Illustration</strong>
+          The Consumer Tech BU has no consolidated view of subscriber churn by segment. Leadership relies on manual Finance reports which take 2 days and apply inconsistent definitions. This prevents proactive retention intervention.
+        </div>
+        <textarea id="f_context" placeholder="Describe what is happening today and why this request matters..."></textarea>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn btn-back btn-back-left" id="btn1b">← Back</button>
+      <button class="nav-btn btn-next" id="btn1">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 3 — Gate questions ── -->
+<div class="step" id="s2">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">3</div>
+      <div><h2>Decision & business impact</h2><p>Both fields are mandatory. Requests without substantive answers are returned at triage.</p></div>
+    </div>
+    <div class="card-body">
+      <div class="gate gate-p">
+        <div class="gate-q"><span>⭐</span><span>What specific business decision will this analytics output enable you to make?</span></div>
+        <div class="eg"><strong>Acceptable answer</strong>I will determine whether to establish a retention programme for subscribers in the 3–6 month tenure band and allocate budget accordingly to that cohort.</div>
+        <div class="gate-warn">✕ Not acceptable: "Better visibility" or "Monitor KPIs" — name the actual decision.</div>
+        <textarea id="f_decision" placeholder="Describe the specific decision this output will inform..."></textarea>
+        <div class="err" id="e_decision">This field is mandatory.</div>
+      </div>
+      <div class="gate gate-o">
+        <div class="gate-q"><span>⭐</span><span>What is the quantifiable or operational impact if this request is not fulfilled?</span></div>
+        <div class="eg"><strong>Acceptable answer</strong>Retention budget will continue to be allocated uniformly, wasting ~30% on low-risk accounts while high-risk subscribers churn undetected — approx. QAR 200k per quarter.</div>
+        <div class="gate-warn">✕ Not acceptable: "It would be helpful" — quantify the cost or risk.</div>
+        <textarea id="f_impact" placeholder="Describe the business cost or operational risk..."></textarea>
+        <div class="err" id="e_impact">This field is mandatory.</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn btn-back btn-back-left" id="btn2b">← Back</button>
+      <button class="nav-btn btn-next" id="btn2">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 4 — Output requirements ── -->
+<div class="step" id="s3">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">4</div>
+      <div><h2>Output & delivery requirements</h2><p>Specify the nature of the deliverable.</p></div>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <div class="lbl">Output type <span class="opt">OPTIONAL</span></div>
+        <div class="hint">Select all that apply.</div>
+        <div class="out-list" id="out_list">
+          <label class="out-row"><input type="checkbox" value="Executive Dashboard"><span>Executive Dashboard</span></label>
+          <label class="out-row"><input type="checkbox" value="Operational Dashboard"><span>Operational Dashboard</span></label>
+          <label class="out-row"><input type="checkbox" value="Automated Weekly Report"><span>Automated Weekly Report</span></label>
+          <label class="out-row"><input type="checkbox" value="Automated Monthly Report"><span>Automated Monthly Report</span></label>
+          <label class="out-row"><input type="checkbox" value="One-Time Analysis"><span>One-Time Analysis</span></label>
+          <label class="out-row"><input type="checkbox" value="Ad-Hoc Data Extract"><span>Ad-Hoc Data Extract</span></label>
+        </div>
+        <div class="err" id="e_out">Please select at least one output type.</div>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <div class="lbl">Refresh frequency <span class="opt">OPTIONAL</span></div>
+          <select id="f_refresh">
+            <option value="">— Select —</option>
+            <option>Real-time</option><option>Daily</option>
+            <option>Weekly</option><option>Monthly</option><option>On-demand</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="lbl">Comparator <span class="opt">OPTIONAL</span></div>
+          <select id="f_comp">
+            <option value="">— Select if applicable —</option>
+            <option>Actual vs. Budget / AOP</option>
+            <option>Actual vs. Prior Period</option>
+            <option>Actual vs. Target</option>
+            <option>Trend over time only</option>
+            <option>No comparator required</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl">Output description <span class="opt">OPTIONAL</span></div>
+        <div class="eg"><strong>Illustration</strong>A single-page dashboard showing weekly churn by tenure band with RAG indicators, filterable by BU and month, with a 12-week trend view.</div>
+        <textarea id="f_outdesc" placeholder="Describe what you want to see..."></textarea>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn btn-back btn-back-left" id="btn3b">← Back</button>
+      <button class="nav-btn btn-next" id="btn3">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 5 — KPIs & RAG ── -->
+<div class="step" id="s4">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">5</div>
+      <div><h2>KPI definitions & RAG thresholds</h2><p>Define the metrics required and performance thresholds.</p></div>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <div class="lbl">KPI & Metric Requirements <span class="req">REQUIRED</span></div>
+        <div class="hint">Type manually or paste directly from Excel — two columns (KPI Name and Definition) will auto-populate.</div>
+        <div style="background:#F9F7FC;border-left:3px solid #7B2D8B;border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:10px;font-size:12px;color:#555;font-style:italic">
+          <strong style="font-style:normal;color:#7B2D8B;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Tip — paste from Excel</strong>
+          Select two columns in Excel (KPI Name + Definition) → Copy → Paste into any field below. All rows fill automatically.
+        </div>
+        <div style="display:grid;grid-template-columns:28px 1fr 1.6fr;gap:8px;padding:8px 10px;background:#F0EDF8;border-radius:8px;margin-bottom:6px">
+          <span></span>
+          <span style="font-size:11px;font-weight:700;color:#7B2D8B;text-transform:uppercase;letter-spacing:.04em">KPI Name</span>
+          <span style="font-size:11px;font-weight:700;color:#7B2D8B;text-transform:uppercase;letter-spacing:.04em">Definition (what does it measure?)</span>
+        </div>
+        <div id="kpi_rows" style="margin-bottom:8px"></div>
+        <button class="add-more" id="add_kpi">+ Add metric</button>
+        <div class="err" id="e_kpis">Please add at least one metric.</div>
+      </div>
+      <div class="field" style="margin-top:20px">
+        <div class="lbl">RAG performance thresholds <span class="opt">OPTIONAL</span></div>
+        <div class="hint">Define thresholds for each status. If not yet known write "To be agreed in Requirement Discovery."</div>
+        <div class="eg"><strong>Example — Churn Rate %</strong>🟢 ≤ 5% — on track.  🟡 5–8% — escalate to retention team.  🔴 > 8% — immediate leadership intervention.</div>
+        <div class="rag-item rag-g">
+          <div class="rag-lbl">🟢 Green — On Track</div>
+          <textarea id="f_rag_g" placeholder="Define the threshold for On Track status..."></textarea>
+        </div>
+        <div class="rag-item rag-a">
+          <div class="rag-lbl">🟡 Amber — At Risk</div>
+          <textarea id="f_rag_a" placeholder="Define the threshold for At Risk status..."></textarea>
+        </div>
+        <div class="rag-item rag-r">
+          <div class="rag-lbl">🔴 Red — Action Required</div>
+          <textarea id="f_rag_r" placeholder="Define the threshold for Action Required status..."></textarea>
+        </div>
+        <div class="err" id="e_rag">Please define at least one RAG threshold, or write "To be agreed in Requirement Discovery."</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn btn-back btn-back-left" id="btn4b">← Back</button>
+      <button class="nav-btn btn-next" id="btn4">Review & Submit →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 6 — Review & submit ── -->
+<div class="step" id="s5">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">6</div>
+      <div><h2>Review & submit</h2><p>Check everything before submitting your request.</p></div>
+    </div>
+    <div class="card-body">
+      <div id="review_box" style="background:#FAFAFA;border:1px solid #E2DFF0;border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px"></div>
+
+      <div class="field">
+        <div class="lbl">Stakeholders <span class="opt">OPTIONAL</span></div>
+        <div class="hint">List individuals with a decision, review or informational role.</div>
+        <div id="sth_rows">
+          <div class="sth-row">
+            <input type="text" placeholder="Full name & role (e.g. Anmol — COO)">
+            <input type="text" placeholder="Interest / involvement">
+          </div>
+        </div>
+        <button class="add-more" id="add_sth">+ Add stakeholder</button>
+      </div>
+
+      <div class="field">
+        <div class="lbl">Additional context <span class="opt">OPTIONAL</span></div>
+        <textarea id="f_notes" placeholder="Constraints, related projects, data sensitivities, existing reports to reference..."></textarea>
+      </div>
+
+      <div class="field">
+        <div class="lbl">Supporting document <span class="opt">OPTIONAL</span></div>
+        <div class="hint">Attach a completed Analytics Requirement Document or any reference material.</div>
+        <div class="attach-box" id="attach_box">
+          <div class="attach-icon">📎</div>
+          <div class="attach-title">Attach document</div>
+          <div class="attach-hint">PDF, Word, Excel — max 10MB</div>
+          <div class="attach-name" id="attach_name"></div>
+          <input type="file" id="f_file" accept=".pdf,.doc,.docx,.xls,.xlsx" onchange="handleFile(this)">
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:#888;line-height:1.6;margin-top:16px">
+        By submitting you confirm the information is accurate. The Business Analytics team will acknowledge receipt and provide a triage decision within 2 business days.
+      </p>
+      <div id="sub_wrap" style="margin-top:16px">
+        <button class="nav-btn btn-sub" id="btn_sub">Submit Request ✓</button>
+      </div>
+      <div class="spin-row" id="spin_row">
+        <div class="spinner"></div><span>Submitting your request — please wait...</span>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn btn-back btn-back-left" id="btn5b">← Edit</button>
+      <div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Result ── -->
+<div class="step" id="s6">
+  <div id="result_box"></div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var JIRA_SITE    = 'starlink-analytics-team.atlassian.net';
+var JIRA_EMAIL   = 'skanchan@starlink.qa';
+var JIRA_TOKEN   = 'ATATT3xFfGF0mKlZ85gTkvWzZVby0DCHThwVaMfG5hU-nDTQ3lC9-RhH4yQC_yk0knDTpXcXg5Vm6kxmBy9HWEarBl4Cqm3exkCp1N5hndc9SylIwu0D9j17h7rg7slu4OmCpxYlh4XriOlytGUEH0NJl138oekHEUPPMlmOhRSgHX8qfODX8I=0C495742';
+var JIRA_PROJECT = 'BA';
+var kpiCount = 2;
+var cur = 0;
+
+var DEPTS = {
+  'Consumer Tech':    ['Retail','E-Commerce','Distribution','B2C Field Force','B2B SOHO','Repair Centre'],
+  'BPO':             ['Call Centre','Human Resource Outsourcing','Installation & Maintenance','BPO Operations'],
+  'ICT Distribution':['ICT Distribution'],
+  'Support':         ['People & Culture','Finance','Commercial & Strategy','Marketing']
+};
+
+function gv(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function she(id, show) { var el = document.getElementById(id); if (el) el.style.display = show ? 'block' : 'none'; }
+
+// Microsoft Graph — auto-capture on SharePoint
+async function loadUser() {
+  try {
+    var r = await fetch('https://graph.microsoft.com/v1.0/me');
+    if (r.ok) {
+      var u = await r.json();
+      setUser(u.displayName || '', u.mail || u.userPrincipalName || '');
+    } else { showManual(); }
+  } catch(e) { showManual(); }
+}
+
+function setUser(name, email) {
+  document.getElementById('f_name').value  = name;
+  document.getElementById('f_email').value = email;
+  document.getElementById('name_val').textContent  = name  || 'Not available';
+  document.getElementById('email_val').textContent = email || 'Not available';
+  document.getElementById('name_val').classList.remove('auto-loading');
+  document.getElementById('email_val').classList.remove('auto-loading');
+}
+
+function showManual() {
+  document.getElementById('disp_name').outerHTML  = '<input type="text"  id="f_name"  placeholder="Your full name" style="display:block;width:100%;padding:12px 14px;border:1.5px solid #D8D4EC;border-radius:10px;font-size:16px;font-family:inherit;color:#1A1A2E;background:#fff;-webkit-appearance:none">';
+  document.getElementById('disp_email').outerHTML = '<input type="email" id="f_email" placeholder="your.name@starlink.qa" style="display:block;width:100%;padding:12px 14px;border:1.5px solid #D8D4EC;border-radius:10px;font-size:16px;font-family:inherit;color:#1A1A2E;background:#fff;-webkit-appearance:none">';
+}
+
+// Department — simple native dropdown
+function loadDepts() {
+  var bu    = gv('f_bu');
+  var wrap  = document.getElementById('dept_wrap');
+  var sel   = document.getElementById('f_dept');
+  var depts = DEPTS[bu] || [];
+  if (!bu || !depts.length) { wrap.style.display = 'none'; return; }
+  sel.innerHTML = depts.map(function(d){
+    return '<option value="'+d+'" style="padding:10px 14px;font-size:15px">'+d+'</option>';
+  }).join('');
+  // Set height to show all options without scrolling
+  sel.size = depts.length;
+  if (depts.length === 1) sel.options[0].selected = true;
+  wrap.style.display = 'block';
+}
+
+function getDept() {
+  var sel = document.getElementById('f_dept');
+  if (!sel) return '';
+  return Array.from(sel.selectedOptions).map(function(o){ return o.value; }).join(', ');
+}
+
+function getOuts() {
+  return Array.from(document.querySelectorAll('#out_list input:checked'))
+    .map(function(c){ return c.value; }).join(', ');
+}
+
+function getKPIs() {
+  return Array.from(document.querySelectorAll('#kpi_rows .kpi-row')).map(function(r, i) {
+    var ins = r.querySelectorAll('input');
+    var name = ins[0].value.trim();
+    var def  = ins[1].value.trim();
+    return name ? (i+1) + '. ' + name + (def ? ' — ' + def : '') : null;
+  }).filter(Boolean).join('\n');
+}
+
+function getRAG() {
+  var g = gv('f_rag_g'), a = gv('f_rag_a'), r = gv('f_rag_r');
+  if (!g && !a && !r) return 'To be agreed in Requirement Discovery.';
+  return '🟢 ' + (g||'TBD') + '\n🟡 ' + (a||'TBD') + '\n🔴 ' + (r||'TBD');
+}
+
+function getSths() {
+  return Array.from(document.querySelectorAll('#sth_rows .sth-row')).map(function(r) {
+    var ins = r.querySelectorAll('input');
+    var nm  = ins[0].value.trim();
+    return nm ? nm + ': ' + (ins[1].value.trim() || '—') : null;
+  }).filter(Boolean).join('\n');
+}
+
+function validate(step) {
+  var ok = true;
+  if (step === 0) {
+    var name  = gv('f_name');
+    var email = gv('f_email');
+    if (!name)  { she('e_bu', false); ok = true; } // name handled below
+    if (!name || name.length < 2) {
+      var nameEl = document.getElementById('e_bu');
+      // show error near BU since name might be hidden field
+    }
+    if (!gv('f_bu'))       { she('e_bu', true);       ok = false; } else she('e_bu', false);
+    she('e_priority', false);
+    // Check name/email — they may be hidden or manual inputs
+    var nameVal  = gv('f_name');
+    var emailVal = gv('f_email');
+    if (!nameVal) {
+      // Try to find manual input
+      var manualName = document.querySelector('input[placeholder="Your full name"]');
+      if (manualName && !manualName.value.trim()) { alert('Please enter your full name.'); return false; }
+    }
+    if (!emailVal) {
+      var manualEmail = document.querySelector('input[placeholder="your.name@starlink.qa"]');
+      if (manualEmail && !manualEmail.value.trim()) { alert('Please enter your email address.'); return false; }
+    }
+  }
+  if (step === 1) {
+    if (!gv('f_title')) { she('e_title', true); ok = false; } else she('e_title', false);
+  }
+  if (step === 2) {
+    if (!gv('f_decision')) { she('e_decision', true); ok = false; } else she('e_decision', false);
+    if (!gv('f_impact'))   { she('e_impact', true);   ok = false; } else she('e_impact', false);
+  }
+  if (step === 3) {
+    she('e_out', false);
+  }
+  if (step === 4) {
+    var hasKpi = Array.from(document.querySelectorAll('#kpi_rows .kpi-row'))
+      .some(function(r){ return r.querySelector('input').value.trim(); });
+    if (!hasKpi) { she('e_kpis', true); ok = false; } else she('e_kpis', false);
+    she('e_rag', false);
+  }
+  if (!ok) {
+    var firstErr = document.querySelector('.err[style*="block"]');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  return ok;
+}
+
+function setStep(n) {
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('s' + n).classList.add('active');
+  cur = n;
+  document.getElementById('prog').style.width = Math.round((n + 1) / 7 * 100) + '%';
+  document.getElementById('step_lbl').textContent = n < 6 ? 'Step ' + (n + 1) + ' of 6' : 'Submitted';
+  window.scrollTo(0, 0);
+}
+
+function goNext(n) {
+  if (!validate(cur)) return;
+  if (n === 5) buildReview();
+  setStep(n);
+}
+
+function buildReview() {
+  var rows = [
+    ['Name', gv('f_name')], ['Email', gv('f_email')],
+    ['Business Unit', gv('f_bu')], ['Department', getDept() || 'Not specified'],
+    ['Priority', gv('f_priority')], ['Required By', gv('f_date') || 'Not specified'],
+    ['Initiative Title', gv('f_title')],
+    ['Business Context', gv('f_context') || 'Not provided'],
+    ['Decision Enabled', gv('f_decision')],
+    ['Impact If Not Fulfilled', gv('f_impact')],
+    ['Output Type', getOuts() || '—'],
+    ['Refresh Frequency', gv('f_refresh') || 'Not specified'],
+    ['Comparator', gv('f_comp') || 'Not specified'],
+    ['KPI Requirements', getKPIs() || '—'],
+    ['RAG Thresholds', getRAG()],
+  ];
+  document.getElementById('review_box').innerHTML = rows.map(function(r) {
+    return '<div class="rev-row"><div class="rev-lbl">' + r[0] + '</div>'
+      + '<div class="rev-val">' + (r[1] || '—').replace(/\n/g, '<br>') + '</div></div>';
+  }).join('');
+}
+
+function addKpiRow(name, def) {
+  kpiCount++;
+  var rows = document.getElementById('kpi_rows');
+  var div = document.createElement('div');
+  div.className = 'kpi-row';
+  div.style.cssText = 'display:grid;grid-template-columns:28px 1fr 1.6fr;gap:8px;align-items:center;padding:8px 10px;border:1.5px solid #E2DFF0;border-radius:10px;margin-bottom:6px;background:#FAFAFA';
+  div.innerHTML = '<span style="font-size:12px;font-weight:700;color:#7B2D8B;text-align:center;flex-shrink:0">' + kpiCount + '</span>'
+    + '<input type="text" value="' + (name||'') + '" placeholder="KPI Name" style="font-size:15px;min-width:0">'
+    + '<input type="text" value="' + (def||'') + '" placeholder="What does it measure?" style="font-size:15px;min-width:0">';
+  // Attach paste handler to first input
+  var nameInput = div.querySelector('input');
+  nameInput.addEventListener('paste', handleKpiPaste);
+  rows.appendChild(div);
+  renumberKpis();
+}
+
+function addKpi() { addKpiRow('', ''); }
+
+function renumberKpis() {
+  document.querySelectorAll('#kpi_rows .kpi-row').forEach(function(r, i) {
+    var num = r.querySelector('span');
+    if (num) num.textContent = i + 1;
+  });
+  kpiCount = document.querySelectorAll('#kpi_rows .kpi-row').length;
+}
+
+function handleKpiPaste(e) {
+  var text = (e.clipboardData || window.clipboardData).getData('text');
+  if (!text) return;
+  var lines = text.trim().split(/\r?\n/).filter(function(l){ return l.trim(); });
+  if (lines.length <= 1) return; // single line — let default paste handle it
+  e.preventDefault();
+  // Clear existing rows
+  document.getElementById('kpi_rows').innerHTML = '';
+  kpiCount = 0;
+  lines.forEach(function(line) {
+    // Split on tab (Excel copy) or multiple spaces
+    var parts = line.split(/\t|  +/);
+    var name = (parts[0] || '').trim();
+    var def  = (parts[1] || '').trim();
+    if (name) addKpiRow(name, def);
+  });
+  // Add one empty row at the end
+  addKpiRow('', '');
+}
+
+function initKpiRows() {
+  kpiCount = 0;
+  document.getElementById('kpi_rows').innerHTML = '';
+  for (var i = 0; i < 3; i++) addKpiRow('', '');
+}
+
+function addSth() {
+  var div = document.createElement('div');
+  div.className = 'sth-row';
+  div.innerHTML = '<input type="text" placeholder="Full name & role">'
+    + '<input type="text" placeholder="Interest / involvement">';
+  document.getElementById('sth_rows').appendChild(div);
+}
+
+function handleFile(input) {
+  var file = input.files[0];
+  if (file) {
+    document.getElementById('attach_box').classList.add('has-file');
+    var n = document.getElementById('attach_name');
+    n.style.display = 'block';
+    n.textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  }
+}
+
+function buildDesc() {
+  var h = function(lv,tx){ return {type:'heading',attrs:{level:lv},content:[{type:'text',text:tx}]}; };
+  var p = function(tx){ return {type:'paragraph',content:[{type:'text',text:tx||'—'}]}; };
+  var b = function(l,v){ return {type:'paragraph',content:[{type:'text',text:l+': ',marks:[{type:'strong'}]},{type:'text',text:v||'—'}]}; };
+  return {type:'doc',version:1,content:[
+    h(2,'Analytics Requirement — '+gv('f_title')),
+    b('Submitted by',gv('f_name')+' ('+gv('f_email')+')'),
+    b('Business unit',gv('f_bu')), b('Department',getDept()||'Not specified'),
+    b('Priority',gv('f_priority')), b('Required by',gv('f_date')||'Not specified'),
+    h(3,'1. Business Context'), p(gv('f_context')),
+    h(3,'2. Decision Enabled ⭐'), p(gv('f_decision')),
+    h(3,'3. Impact If Not Fulfilled ⭐'), p(gv('f_impact')),
+    h(3,'4. Output & Delivery'),
+    b('Output type',getOuts()), b('Refresh',gv('f_refresh')||'—'),
+    b('Comparator',gv('f_comp')||'—'), p(gv('f_outdesc')),
+    h(3,'5. KPI Requirements'), p(getKPIs()),
+    h(3,'6. RAG Thresholds'), p(getRAG()),
+    h(3,'7. Stakeholders'), p(getSths()||'Not provided'),
+    h(3,'8. Additional Context'), p(gv('f_notes')||'None'),
+  ]};
+}
+
+async function doSubmit() {
+  document.getElementById('sub_wrap').style.display = 'none';
+  document.getElementById('spin_row').style.display = 'flex';
+
+  var payload = {
+    name:        gv('f_name'),
+    email:       gv('f_email'),
+    bu:          gv('f_bu'),
+    dept:        gv('f_dept') || getDept(),
+    priority:    gv('f_priority'),
+    date:        gv('f_date'),
+    title:       gv('f_title'),
+    context:     gv('f_context'),
+    decision:    gv('f_decision'),
+    impact:      gv('f_impact'),
+    output_type: getOuts(),
+    refresh:     gv('f_refresh'),
+    kpis:        getKPIs(),
+    rag_g:       gv('f_rag_g'),
+    rag_a:       gv('f_rag_a'),
+    rag_r:       gv('f_rag_r'),
+    notes:       gv('f_notes')
+  };
+
+  var ts = Date.now(); // cache buster — forces fresh execution every time
+  try {
+    // Try JSON POST first
+    var resp = await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec?t=' + ts, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+    if (result.status === 'success') { showResult(true); return; }
+  } catch(e) {}
+  try {
+    // GET fallback with cache buster
+    var encoded = encodeURIComponent(JSON.stringify(payload));
+    var resp2 = await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec?t=' + ts + '&data=' + encoded, {
+      cache: 'no-store'
+    });
+    var result2 = await resp2.json();
+    if (result2.status === 'success') { showResult(true); return; }
+  } catch(e2) {}
+  try {
+    // Final fallback — no-cors
+    var fd = new FormData();
+    fd.append('data', JSON.stringify(payload));
+    fd.append('t', ts);
+    await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec', { method:'POST', mode:'no-cors', body:fd });
+    showResult(true);
+  } catch(e3) {
+    showResult(false, e3.message);
+  }
+}
+
+function showResult(ok, detail) {
+  setStep(6);
+  document.getElementById('result_box').innerHTML = ok ?
+    '<div class="result ok">' +
+      '<div class="result-icon">✅</div>' +
+      '<p class="result-title">Request Submitted Successfully</p>' +
+      '<p class="result-body">Your analytics request has been received by the Business Analytics team.<br>The Analytics Manager will review and triage within <strong>2 business days</strong>.<br><br>You will be contacted to confirm next steps.</p>' +
+      '<p style="font-size:13px;color:#1A7A46;font-weight:600;margin-top:12px">Thank you, ' + gv('f_name') + '.</p>' +
+    '</div>' :
+    '<div class="result fail">' +
+      '<div class="result-icon">⚠️</div>' +
+      '<p class="result-title">Submission Failed</p>' +
+      '<p class="result-body">Something went wrong. Please try again or contact the Analytics team directly.</p>' +
+      '<div class="cors-box"><strong>Detail:</strong> ' + (detail||'Unknown error') + '</div>' +
+      '<div style="margin-top:16px"><button class="nav-btn btn-back" onclick="setStep(5)">← Back to review</button></div>' +
+    '</div>';
+}
+
+// Bind all buttons via addEventListener — reliable on all mobile browsers
+document.getElementById('btn0').addEventListener('click', function(){ goNext(1); });
+document.getElementById('btn1').addEventListener('click', function(){ goNext(2); });
+document.getElementById('btn1b').addEventListener('click', function(){ setStep(0); });
+document.getElementById('btn2').addEventListener('click', function(){ goNext(3); });
+document.getElementById('btn2b').addEventListener('click', function(){ setStep(1); });
+document.getElementById('btn3').addEventListener('click', function(){ goNext(4); });
+document.getElementById('btn3b').addEventListener('click', function(){ setStep(2); });
+document.getElementById('btn4').addEventListener('click', function(){ goNext(5); });
+document.getElementById('btn4b').addEventListener('click', function(){ setStep(3); });
+document.getElementById('btn5b').addEventListener('click', function(){ setStep(4); });
+document.getElementById('btn_sub').addEventListener('click', doSubmit);
+document.getElementById('add_kpi').addEventListener('click', addKpi);
+document.getElementById('add_sth').addEventListener('click', addSth);
+
+document.querySelectorAll('#out_list label').forEach(function(lbl) {
+  lbl.addEventListener('change', function(){
+    this.classList.toggle('on', this.querySelector('input').checked);
+  });
+});
+
+// Init
+loadUser();
+initKpiRows();
+</script>
+</body>
+</html>
