@@ -823,48 +823,34 @@ async function doSubmit() {
   };
 
   var ts = Date.now();
-  var TIMEOUT = 15000; // 15 seconds max
 
-  function fetchWithTimeout(url, options) {
-    return Promise.race([
-      fetch(url, options),
-      new Promise(function(_, reject) {
-        setTimeout(function(){ reject(new Error('timeout')); }, TIMEOUT);
-      })
-    ]);
-  }
-
-  // Method 1 — JSON POST
-  try {
-    var resp = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
-    });
-    var result = await resp.json();
-    if (result.status === 'success') { showResult(true); return; }
-  } catch(e) {}
-
-  // Method 2 — GET with data in URL
-  try {
-    var encoded = encodeURIComponent(JSON.stringify(payload));
-    var resp2 = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts + '&data=' + encoded, {
-      cache: 'no-store'
-    });
-    var result2 = await resp2.json();
-    if (result2.status === 'success') { showResult(true); return; }
-  } catch(e2) {}
-
-  // Method 3 — no-cors fallback (always shows success)
+  // Always try no-cors first — works from any domain including GitHub Pages
   try {
     var fd = new FormData();
     fd.append('data', JSON.stringify(payload));
-    fd.append('t', ts);
-    await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec', { method:'POST', mode:'no-cors', body:fd });
+    fd.append('t', String(ts));
+    var noCorsResp = await fetch('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec', {
+      method: 'POST',
+      mode: 'no-cors',
+      body: fd
+    });
+    // no-cors always returns opaque response — treat as success
     showResult(true);
-  } catch(e3) {
-    showResult(false, 'All submission methods failed. Please try again.');
-  }
+    return;
+  } catch(e1) {}
+
+  // Fallback — GET with small payload (no attachment)
+  try {
+    var smallPayload = Object.assign({}, payload);
+    delete smallPayload.attach_data; // remove large base64
+    smallPayload.attach_data = '';
+    var encoded = encodeURIComponent(JSON.stringify(smallPayload));
+    var resp = await fetch('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts + '&data=' + encoded);
+    var result = await resp.json();
+    if (result.status === 'success') { showResult(true); return; }
+  } catch(e2) {}
+
+  showResult(false, 'Submission failed. Please try again.');
 }
 
 function showResult(ok, detail) {
