@@ -744,12 +744,27 @@ function addSth() {
 
 function handleFile(input) {
   var file = input.files[0];
-  if (file) {
-    document.getElementById('attach_box').classList.add('has-file');
-    var n = document.getElementById('attach_name');
-    n.style.display = 'block';
-    n.textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File too large. Please attach a file under 5MB.');
+    input.value = '';
+    return;
   }
+  var n = document.getElementById('attach_name');
+  n.style.display = 'block';
+  n.textContent = 'Reading file...';
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    window._attachData     = ev.target.result.split(',')[1];
+    window._attachName     = file.name;
+    window._attachMimeType = file.type || 'application/octet-stream';
+    document.getElementById('attach_box').classList.add('has-file');
+    n.textContent = '✓ ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB) — ready to send';
+  };
+  reader.onerror = function() {
+    n.textContent = 'Failed to read file. Please try again.';
+  };
+  reader.readAsDataURL(file);
 }
 
 function buildDesc() {
@@ -795,13 +810,27 @@ async function doSubmit() {
     rag_g:       gv('f_rag_g'),
     rag_a:       gv('f_rag_a'),
     rag_r:       gv('f_rag_r'),
-    notes:       gv('f_notes')
+    notes:       gv('f_notes'),
+    attach_data: window._attachData     || '',
+    attach_name: window._attachName     || '',
+    attach_mime: window._attachMimeType || ''
   };
 
-  var ts = Date.now(); // cache buster — forces fresh execution every time
+  var ts = Date.now();
+  var TIMEOUT = 15000; // 15 seconds max
+
+  function fetchWithTimeout(url, options) {
+    return Promise.race([
+      fetch(url, options),
+      new Promise(function(_, reject) {
+        setTimeout(function(){ reject(new Error('timeout')); }, TIMEOUT);
+      })
+    ]);
+  }
+
+  // Method 1 — JSON POST
   try {
-    // Try JSON POST first
-    var resp = await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec?t=' + ts, {
+    var resp = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec?t=' + ts, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
@@ -809,24 +838,26 @@ async function doSubmit() {
     var result = await resp.json();
     if (result.status === 'success') { showResult(true); return; }
   } catch(e) {}
+
+  // Method 2 — GET with data in URL
   try {
-    // GET fallback with cache buster
     var encoded = encodeURIComponent(JSON.stringify(payload));
-    var resp2 = await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec?t=' + ts + '&data=' + encoded, {
+    var resp2 = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec?t=' + ts + '&data=' + encoded, {
       cache: 'no-store'
     });
     var result2 = await resp2.json();
     if (result2.status === 'success') { showResult(true); return; }
   } catch(e2) {}
+
+  // Method 3 — no-cors fallback (always shows success)
   try {
-    // Final fallback — no-cors
     var fd = new FormData();
     fd.append('data', JSON.stringify(payload));
     fd.append('t', ts);
-    await fetch('https://script.google.com/macros/s/AKfycbxuHh1b5r-kJiSuGfErGNfLccq1e4XLD74IhJhlsAmbQys1fq3kgJ4L-LqMdxtfAA0L/exec', { method:'POST', mode:'no-cors', body:fd });
+    await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec', { method:'POST', mode:'no-cors', body:fd });
     showResult(true);
   } catch(e3) {
-    showResult(false, e3.message);
+    showResult(false, 'All submission methods failed. Please try again.');
   }
 }
 
