@@ -824,33 +824,69 @@ async function doSubmit() {
 
   var ts = Date.now();
 
-  // Always try no-cors first — works from any domain including GitHub Pages
-  try {
-    var fd = new FormData();
-    fd.append('data', JSON.stringify(payload));
-    fd.append('t', String(ts));
-    var noCorsResp = await fetch('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec', {
-      method: 'POST',
-      mode: 'no-cors',
-      body: fd
-    });
-    // no-cors always returns opaque response — treat as success
-    showResult(true);
-    return;
-  } catch(e1) {}
+  // Use GET method — this is what was working before
+  // Strip attachment from URL call — send separately
+  var corePayload = {
+    timestamp:   payload.timestamp,
+    name:        payload.name,
+    email:       payload.email,
+    bu:          payload.bu,
+    dept:        payload.dept,
+    priority:    payload.priority,
+    date:        payload.date,
+    title:       payload.title,
+    context:     payload.context,
+    decision:    payload.decision,
+    impact:      payload.impact,
+    output_type: payload.output_type,
+    refresh:     payload.refresh,
+    kpis:        payload.kpis,
+    rag_g:       payload.rag_g,
+    rag_a:       payload.rag_a,
+    rag_r:       payload.rag_r,
+    notes:       payload.notes,
+    attach_name: payload.attach_name || '',
+    attach_data: payload.attach_data || '',
+    attach_mime: payload.attach_mime || ''
+  };
 
-  // Fallback — GET with small payload (no attachment)
   try {
-    var smallPayload = Object.assign({}, payload);
-    delete smallPayload.attach_data; // remove large base64
-    smallPayload.attach_data = '';
-    var encoded = encodeURIComponent(JSON.stringify(smallPayload));
-    var resp = await fetch('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts + '&data=' + encoded);
+    // Method 1 — JSON POST (works from GitHub Pages)
+    var controller = new AbortController();
+    var timer = setTimeout(function(){ controller.abort(); }, 10000);
+    var resp = await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec?t=' + ts, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corePayload),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
     var result = await resp.json();
     if (result.status === 'success') { showResult(true); return; }
+  } catch(e1) {}
+
+  try {
+    // Method 2 — GET with JSON in URL
+    var encoded = encodeURIComponent(JSON.stringify(corePayload));
+    var controller2 = new AbortController();
+    var timer2 = setTimeout(function(){ controller2.abort(); }, 10000);
+    var resp2 = await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec?t=' + ts + '&data=' + encoded, {
+      signal: controller2.signal
+    });
+    clearTimeout(timer2);
+    var result2 = await resp2.json();
+    if (result2.status === 'success') { showResult(true); return; }
   } catch(e2) {}
 
-  showResult(false, 'Submission failed. Please try again.');
+  try {
+    // Method 3 — no-cors last resort
+    var fd = new FormData();
+    fd.append('data', JSON.stringify(corePayload));
+    await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec', { method:'POST', mode:'no-cors', body:fd });
+    showResult(true);
+  } catch(e3) {
+    showResult(false, 'Submission failed. Please try again.');
+  }
 }
 
 function showResult(ok, detail) {
