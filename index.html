@@ -793,7 +793,13 @@ async function doSubmit() {
   document.getElementById('sub_wrap').style.display = 'none';
   document.getElementById('spin_row').style.display = 'flex';
 
+  // Generate timestamp in browser — avoids Google Workspace Arabic locale issue
+  var now = new Date();
+  var pad = function(n){ return n < 10 ? '0'+n : n; };
+  var timestamp = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear()+' '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+
   var payload = {
+    timestamp:   timestamp,
     name:        gv('f_name'),
     email:       gv('f_email'),
     bu:          gv('f_bu'),
@@ -830,7 +836,7 @@ async function doSubmit() {
 
   // Method 1 — JSON POST
   try {
-    var resp = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec?t=' + ts, {
+    var resp = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
@@ -842,7 +848,7 @@ async function doSubmit() {
   // Method 2 — GET with data in URL
   try {
     var encoded = encodeURIComponent(JSON.stringify(payload));
-    var resp2 = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec?t=' + ts + '&data=' + encoded, {
+    var resp2 = await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec?t=' + ts + '&data=' + encoded, {
       cache: 'no-store'
     });
     var result2 = await resp2.json();
@@ -854,7 +860,7 @@ async function doSubmit() {
     var fd = new FormData();
     fd.append('data', JSON.stringify(payload));
     fd.append('t', ts);
-    await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwnwqwm4XwuGBF1k-cOHKqH9q55IMo_saJYAnrdmd9f-HfXFx_EMNRedlL-x1imtKnn/exec', { method:'POST', mode:'no-cors', body:fd });
+    await fetchWithTimeout('https://script.google.com/macros/s/AKfycbwcsXtAnaKiyn6BPPHS8pHL9XB3lxGItGkHDtqM1vJ4OevDMqpOxWSgA0OgV0yAhckZ/exec', { method:'POST', mode:'no-cors', body:fd });
     showResult(true);
   } catch(e3) {
     showResult(false, 'All submission methods failed. Please try again.');
