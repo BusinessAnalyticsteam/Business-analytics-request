@@ -817,6 +817,9 @@ async function doSubmit() {
     rag_a:       gv('f_rag_a'),
     rag_r:       gv('f_rag_r'),
     notes:       gv('f_notes'),
+    output_desc: gv('f_outdesc'),
+    comparator:  gv('f_comp'),
+    audience:    gv('f_audience'),
     attach_data: window._attachData     || '',
     attach_name: window._attachName     || '',
     attach_mime: window._attachMimeType || ''
@@ -847,14 +850,17 @@ async function doSubmit() {
     notes:       payload.notes,
     attach_name: payload.attach_name || '',
     attach_data: payload.attach_data || '',
-    attach_mime: payload.attach_mime || ''
+    attach_mime: payload.attach_mime || '',
+    output_desc: gv('f_outdesc'),
+    comparator:  gv('f_comp'),
+    audience:    gv('f_audience')
   };
 
   try {
     // Method 1 — JSON POST (works from GitHub Pages)
     var controller = new AbortController();
     var timer = setTimeout(function(){ controller.abort(); }, 10000);
-    var resp = await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec?t=' + ts, {
+    var resp = await fetch('https://script.google.com/macros/s/AKfycbwWp8UFIgNEnLfVXyd1dduOEer7hJpuY4JirGsTHdtqElg6CSMBt7E2q8Kwwaz8ZDLV/exec?t=' + ts, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(corePayload),
@@ -870,7 +876,7 @@ async function doSubmit() {
     var encoded = encodeURIComponent(JSON.stringify(corePayload));
     var controller2 = new AbortController();
     var timer2 = setTimeout(function(){ controller2.abort(); }, 10000);
-    var resp2 = await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec?t=' + ts + '&data=' + encoded, {
+    var resp2 = await fetch('https://script.google.com/macros/s/AKfycbwWp8UFIgNEnLfVXyd1dduOEer7hJpuY4JirGsTHdtqElg6CSMBt7E2q8Kwwaz8ZDLV/exec?t=' + ts + '&data=' + encoded, {
       signal: controller2.signal
     });
     clearTimeout(timer2);
@@ -882,7 +888,7 @@ async function doSubmit() {
     // Method 3 — no-cors last resort
     var fd = new FormData();
     fd.append('data', JSON.stringify(corePayload));
-    await fetch('https://script.google.com/macros/s/AKfycbwjyt-0k2VndlK0TPRDAGMt9hGKZ2NlqhEwzcuFS67wD6MEXJLAH7_4kijIeuN3NVU/exec', { method:'POST', mode:'no-cors', body:fd });
+    await fetch('https://script.google.com/macros/s/AKfycbwWp8UFIgNEnLfVXyd1dduOEer7hJpuY4JirGsTHdtqElg6CSMBt7E2q8Kwwaz8ZDLV/exec', { method:'POST', mode:'no-cors', body:fd });
     showResult(true);
   } catch(e3) {
     showResult(false, 'Submission failed. Please try again.');
@@ -897,6 +903,9 @@ function showResult(ok, detail) {
       '<p class="result-title">Request Submitted Successfully</p>' +
       '<p class="result-body">Your analytics request has been received by the Business Analytics team.<br>The Analytics Manager will review and triage within <strong>2 business days</strong>.<br><br>You will be contacted to confirm next steps.</p>' +
       '<p style="font-size:13px;color:#1A7A46;font-weight:600;margin-top:12px">Thank you, ' + gv('f_name') + '.</p>' +
+      '<div style="margin-top:20px">' +
+        '<button class="nav-btn btn-next" onclick="downloadPDF()" style="max-width:300px;margin:0 auto;display:block;font-size:14px;padding:14px">📄 Download Your Request as PDF</button>' +
+      '</div>' +
     '</div>' :
     '<div class="result fail">' +
       '<div class="result-icon">⚠️</div>' +
@@ -931,6 +940,157 @@ document.querySelectorAll('#out_list label').forEach(function(lbl) {
 // Init
 loadUser();
 initKpiRows();
+
+// ── Generate and download PDF ─────────────────────────────────────────────
+function downloadPDF() {
+  var name      = gv('f_name')      || '—';
+  var email     = gv('f_email')     || '—';
+  var bu        = gv('f_bu')        || '—';
+  var dept      = gv('f_dept') || getDept() || '—';
+  var priority  = gv('f_priority')  || '—';
+  var date      = gv('f_date')      || '—';
+  var title     = gv('f_title')     || '—';
+  var context   = gv('f_context')   || '—';
+  var decision  = gv('f_decision')  || '—';
+  var impact    = gv('f_impact')    || '—';
+  var outType   = getOuts()         || '—';
+  var refresh   = gv('f_refresh')   || '—';
+  var kpis      = getKPIs()         || '—';
+  var ragG      = gv('f_rag_g')     || 'To be agreed';
+  var ragA      = gv('f_rag_a')     || 'To be agreed';
+  var ragR      = gv('f_rag_r')     || 'To be agreed';
+  var notes     = gv('f_notes')     || '—';
+  var outdesc   = gv('f_outdesc')   || '—';
+  var comparator= gv('f_comp')      || '—';
+  var audience  = gv('f_audience')  || '—';
+  var attachName= window._attachName|| '';
+
+  var now = new Date();
+  var pad = function(n){ return n < 10 ? '0'+n : n; };
+  var ts  = pad(now.getDate())+'/'+pad(now.getMonth()+1)+'/'+now.getFullYear()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<style>' +
+    'body{font-family:Arial,sans-serif;font-size:12px;color:#1A1A2E;margin:0;padding:0}' +
+    '.header{background:#7B2D8B;color:#fff;padding:24px 32px;margin-bottom:0}' +
+    '.header h1{font-size:20px;font-weight:700;margin:0 0 4px}' +
+    '.header p{font-size:11px;color:rgba(255,255,255,0.8);margin:0}' +
+    '.orange-bar{height:4px;background:#F7941D}' +
+    '.body{padding:24px 32px}' +
+    '.meta-table{width:100%;border-collapse:collapse;margin-bottom:20px}' +
+    '.meta-table td{padding:7px 10px;border:1px solid #E2DFF0;font-size:11px}' +
+    '.meta-table td:first-child{background:#F0EDF8;font-weight:700;color:#7B2D8B;width:30%}' +
+    '.section{margin-bottom:18px}' +
+    '.section-title{background:#7B2D8B;color:#fff;font-size:11px;font-weight:700;padding:6px 10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:0}' +
+    '.section-body{border:1px solid #E2DFF0;border-top:none;padding:10px;font-size:11px;line-height:1.7;white-space:pre-wrap}' +
+    '.gate-box{border:1.5px solid #C9A8E0;background:#F7F3FC;padding:10px;margin-bottom:10px;border-radius:4px}' +
+    '.gate-box.orange{border-color:#F0C878;background:#FFF8F0}' +
+    '.gate-label{font-size:10px;font-weight:700;color:#7B2D8B;margin-bottom:4px}' +
+    '.gate-box.orange .gate-label{color:#7A4500}' +
+    '.rag-row{display:flex;gap:8px;margin-top:8px}' +
+    '.rag-cell{flex:1;padding:8px;border-radius:4px;font-size:11px}' +
+    '.rag-g{background:#F0FAF4;border:1px solid #A8DDB5}' +
+    '.rag-a{background:#FFFBF0;border:1px solid #F0D090}' +
+    '.rag-r{background:#FDF0F0;border:1px solid #F0A0A0}' +
+    '.rag-lbl{font-size:10px;font-weight:700;margin-bottom:4px}' +
+    '.rag-g .rag-lbl{color:#1A7A46}' +
+    '.rag-a .rag-lbl{color:#8A5500}' +
+    '.rag-r .rag-lbl{color:#AA2222}' +
+    '.footer{margin-top:24px;padding-top:12px;border-top:2px solid #F7941D;font-size:10px;color:#999;text-align:center}' +
+    '</style></head><body>' +
+    '<div class="header">' +
+      '<h1>Analytics Requirement Document</h1>' +
+      '<p>Business Analytics · Starlink Qatar · Starzen GCC</p>' +
+    '</div>' +
+    '<div class="orange-bar"></div>' +
+    '<div class="body">' +
+
+    '<table class="meta-table">' +
+      '<tr><td>Submitted By</td><td>' + name + ' (' + email + ')</td></tr>' +
+      '<tr><td>Business Unit</td><td>' + bu + '</td></tr>' +
+      '<tr><td>Department</td><td>' + dept + '</td></tr>' +
+      '<tr><td>Priority</td><td>' + priority + '</td></tr>' +
+      '<tr><td>Required By</td><td>' + date + '</td></tr>' +
+      '<tr><td>Submitted On</td><td>' + ts + '</td></tr>' +
+    '</table>' +
+
+    '<div class="section">' +
+      '<div class="section-title">Initiative Title</div>' +
+      '<div class="section-body">' + title + '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">Business Context</div>' +
+      '<div class="section-body">' + context + '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">Decision &amp; Business Impact</div>' +
+      '<div class="section-body">' +
+        '<div class="gate-box">' +
+          '<div class="gate-label">⭐ Decision This Enables</div>' +
+          '<div>' + decision + '</div>' +
+        '</div>' +
+        '<div class="gate-box orange">' +
+          '<div class="gate-label">⭐ Impact If Not Delivered</div>' +
+          '<div>' + impact + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">Output Requirements</div>' +
+      '<div class="section-body">' +
+        '<strong>Output Type:</strong> ' + outType + '\n' +
+        '<strong>Refresh Frequency:</strong> ' + refresh + '\n' +
+        '<strong>Comparator:</strong> ' + comparator + '\n' +
+        '<strong>Intended Audience:</strong> ' + audience + '\n\n' +
+        '<strong>Output Description:</strong>\n' + outdesc +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">KPI &amp; Metric Requirements</div>' +
+      '<div class="section-body">' + kpis + '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">RAG Performance Thresholds</div>' +
+      '<div class="section-body">' +
+        '<div class="rag-row">' +
+          '<div class="rag-cell rag-g"><div class="rag-lbl">🟢 Green — On Track</div>' + ragG + '</div>' +
+          '<div class="rag-cell rag-a"><div class="rag-lbl">🟡 Amber — At Risk</div>' + ragA + '</div>' +
+          '<div class="rag-cell rag-r"><div class="rag-lbl">🔴 Red — Action Required</div>' + ragR + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="section">' +
+      '<div class="section-title">Additional Notes</div>' +
+      '<div class="section-body">' + notes + '</div>' +
+    '</div>' +
+
+    (attachName ? '<div class="section">' +
+      '<div class="section-title">Supporting Document</div>' +
+      '<div class="section-body">' + attachName + ' (attached to submission)</div>' +
+    '</div>' : '') +
+    '<div class="footer">' +
+      'Analytics Requirement Document · Business Analytics · Starlink Qatar (Starzen GCC) · Generated ' + ts +
+    '</div>' +
+    '</div></body></html>';
+
+  // Open in new tab — stakeholder saves manually as PDF (Ctrl+P or File > Save as PDF)
+  var win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  // Add save instructions at top
+  var banner = win.document.createElement('div');
+  banner.style.cssText = 'background:#7B2D8B;color:#fff;padding:10px 20px;font-family:Arial,sans-serif;font-size:13px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:9999';
+  banner.innerHTML = '📄 To save as PDF: Press <strong>Ctrl+P</strong> (Windows) or <strong>Cmd+P</strong> (Mac) → Select "Save as PDF" → Click Save';
+  win.document.body.insertBefore(banner, win.document.body.firstChild);
+  win.document.body.style.marginTop = '44px';
+}
 </script>
 </body>
 </html>
